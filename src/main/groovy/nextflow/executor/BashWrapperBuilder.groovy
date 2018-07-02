@@ -35,7 +35,6 @@ import nextflow.processor.TaskBean
 import nextflow.processor.TaskProcessor
 import nextflow.processor.TaskRun
 import nextflow.util.Escape
-
 /**
  * Builder to create the BASH script which is used to
  * wrap and launch the user task
@@ -429,7 +428,7 @@ class BashWrapperBuilder {
         /*
          * create the container launcher command if needed
          */
-        containerBuilder = runWithContainer ? createContainerBuilder(environment,changeDir) : null
+        containerBuilder = runWithContainer ? createContainerBuilder(changeDir) : null
 
         /*
          * reformat the task script to include the container launch command when it's a executable container eg:
@@ -749,7 +748,7 @@ class BashWrapperBuilder {
      * @return A {@link DockerBuilder} instance
      */
     @PackageScope
-    ContainerBuilder createContainerBuilder(Map environment, String changeDir) {
+    ContainerBuilder createContainerBuilder(String changeDir) {
 
         final engine = containerConfig.getEngine()
         ContainerBuilder builder
@@ -800,15 +799,24 @@ class BashWrapperBuilder {
             builder.addEnv( 'NXF_OWNER=$(id -u):$(id -g)' )
 
         // set the environment
-        if( this.environment && this.containerExecutable ) {
+        if( environment && containerExecutable ) {
+            def copy = new HashMap(environment)
             // PATH variable cannot be extended in an executable container
             // make sure to not include it to avoid to override the container PATH
-            environment.remove('PATH')
+            copy.remove('PATH')
 
             // NOTE: the task environment is added only for executable container
             // for *plain* container the environment is passed through the special
             // `nxf_taskenv` bash function wrapper
-            builder.addEnv( environment )
+            builder.addEnv( copy )
+        }
+        else if( environment ) {
+            // variables for which the value is given by another env variable
+            // need to be exported explicitly in the variable environment
+            for( Map.Entry<String,String> e : environment.entrySet() ) {
+                if( e.value.size()>1 && e.value[0]=='$' && Character.isLetter(e.value.charAt(1)) )
+                    builder.addEnv( "${e.value.substring(1)}=${e.value}")
+            }
         }
 
         if( engine=='docker' && System.getenv('NXF_DOCKER_OPTS') ) {

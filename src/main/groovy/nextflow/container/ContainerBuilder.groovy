@@ -55,6 +55,10 @@ abstract class ContainerBuilder<V extends ContainerBuilder> {
 
     protected String runCommand
 
+    List getEnv() { env }
+
+    Path getWorkDir() { workDir }
+
     V addRunOptions(String str) {
         runOptions.add(str)
         return (V)this
@@ -135,7 +139,7 @@ abstract class ContainerBuilder<V extends ContainerBuilder> {
     }
 
     V addEnv( entry ) {
-        env.add(entry)
+        env.add(entry instanceof GString ? entry.toString() : entry)
         return (V)this
     }
 
@@ -152,7 +156,7 @@ abstract class ContainerBuilder<V extends ContainerBuilder> {
 
     static List<Path> inputFilesToPaths( Map<String,Path> inputFiles ) {
 
-        def List<Path> files = []
+        List<Path> files = []
         inputFiles.each { name, storePath ->
 
             def path = storePath.getParent()

@@ -123,7 +123,7 @@ class SingularityBuilder extends ContainerBuilder<SingularityBuilder> {
             result << 'SINGULARITYENV_' << env
         }
         else if( env ) {
-            throw new IllegalArgumentException("Not a valid environment value: $env [${env.class.name}]")
+            throw new IllegalArgumentException("Not a valid environment value: $env [${env.getClass().name}]")
         }
 
         return result
